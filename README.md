@@ -2,7 +2,7 @@
 
 This project investigates how soft and hard enforcement of initial and boundary conditions affects the training of physics-informed neural networks (PINNs). It uses the one-dimensional viscous Burgers’ equation and explores training behavior through the empirical neural tangent kernel (NTK).
 
-The project builds on the Burgers’ equation example of Raissi, Perdikaris, and Karniadakis (2019), with NTK analysis motivated by Wang, Yu, and Perdikaris (2022).
+The project builds on the Burgers’ equation example of Raissi, Perdikaris, and Karniadakis (2019)
 
 ## Research Questions
 

@@ -1,125 +1,58 @@
 # Burgers’ Equation with PINNs: Soft vs. Hard Constraints and NTK Analysis
 
-This project investigates how soft and hard enforcement of initial and boundary conditions affects the training of physics-informed neural networks (PINNs). It uses the one-dimensional viscous Burgers’ equation and explores training behavior through the empirical neural tangent kernel (NTK).
+This project uses PyTorch to investigate how soft and hard enforcement of initial and boundary conditions affects physics-informed neural networks (PINNs). It also uses the empirical neural tangent kernel (NTK) to study their training behavior.
 
-The project builds on the Burgers’ equation example of Raissi, Perdikaris, and Karniadakis (2019)
+The project builds on the Burgers’ equation example from Raissi, Perdikaris, and Karniadakis (2019), with NTK analysis motivated by Wang, Yu, and Perdikaris (2022).
 
-## Research Questions
+## Problem
 
-- How does hard constraint enforcement affect solution accuracy compared with soft loss penalties?
-- How do the empirical NTK spectra and kernel evolution differ between the two formulations?
-- Can NTK-based loss weighting improve the soft-constrained model?
-
-## Problem Definition
-
-We consider the viscous Burgers’ equation:
+We solve the one-dimensional viscous Burgers’ equation:
 
 $$
-u_t + u u_x - \nu u_{xx} = 0,
-\qquad \nu = \frac{0.01}{\pi},
+u_t + u u_x - \frac{0.01}{\pi}u_{xx} = 0.
 $$
 
-on the domain:
+The spatial domain is `[-1, 1]`, and the time interval is `[0, 1]`. The initial condition is `u(x, 0) = -sin(πx)`, with zero values at both spatial boundaries.
+
+## Methods
+
+The study compares three approaches:
+
+| Approach | Description |
+|---|---|
+| Soft constraints | Initial and boundary conditions are enforced through loss penalties. |
+| NTK-weighted soft constraints | Loss weights are adjusted using empirical NTK traces. |
+| Hard constraints | The network output is constructed to satisfy the initial and boundary conditions automatically. |
+
+For the hard-constrained model, the solution is constructed as:
 
 $$
-x \in [-1,1], \qquad t \in [0,1],
+u_\theta(x,t) = -\sin(\pi x) + t(1-x^2)N_\theta(x,t).
 $$
 
-with initial condition:
+This construction removes the need for initial and boundary loss penalties. Training minimizes the PDE residual.
 
-$$
-u(x,0) = -\sin(\pi x),
-$$
+## NTK Analysis
 
-and boundary conditions:
+The empirical NTK measures how changes in network parameters affect predictions and PDE residuals.
 
-$$
-u(-1,t) = u(1,t) = 0.
-$$
+The analysis examines:
 
-The neural network approximates the solution using the coordinates $(x,t)$ as inputs.
+- Kernel eigenvalue spectra.
+- Relative strengths of constraint and residual kernels.
+- Kernel changes during training.
+- Differences between soft and hard formulations.
 
-## Comparison Design
-
-### 1. Soft Constraints
-
-The network directly predicts the solution:
-
-$$
-u_\theta(x,t) = N_\theta(x,t).
-$$
-
-Initial and boundary conditions are enforced through loss penalties:
-
-$$
-L_{\text{soft}} = L_c + L_r,
-$$
-
-where $L_c$ is the mean squared initial/boundary error and $L_r$ is the mean squared PDE residual.
-
-### 2. Hard Constraints
-
-The network output is transformed:
-
-$$
-u_\theta(x,t)
-=
--\sin(\pi x)
-+
-t(1-x^2)N_\theta(x,t).
-$$
-
-This construction satisfies the prescribed initial and boundary conditions analytically, up to floating-point roundoff.
-
-Training therefore minimizes only the PDE residual:
-
-$$
-L_{\text{hard}} = L_r.
-$$
-
-The residual is calculated by differentiating the complete transformed output.
-
-### 3. NTK-Weighted Soft Constraints
-
-The soft loss is extended to:
-
-$$
-L_{\text{soft,NTK}}
-=
-\lambda_c L_c + \lambda_r L_r.
-$$
-
-The weights are adapted using empirical NTK traces to investigate whether balancing the loss components improves training.
-
-## Neural Tangent Kernel Analysis
-
-For a vector of model outputs or residuals $q_\theta$, the empirical NTK is:
-
-$$
-J_q = \frac{\partial q_\theta}{\partial \theta},
-\qquad
-K_q = J_q J_q^\top.
-$$
-
-The analysis considers constraint, PDE-residual, and interior-output kernels on fixed probe points.
-
-For mean-square losses, Jacobian rows are normalized by the square root of the corresponding probe count. Kernel diagnostics include:
-
-- Eigenvalue spectra.
-- Kernel traces.
-- Relative changes from initialization.
-- Differences between soft and hard residual kernels.
-
-The hard model has a zero constraint Jacobian because its constraints are satisfied by construction. NTK loss balancing therefore applies to the soft model, while kernel analysis applies to both formulations.
+NTK-based loss balancing applies to the soft model. The hard model has no constraint penalties to rebalance, but its residual kernel can still be analyzed.
 
 ## Dataset
 
-The reference dataset is `burgers_shock.mat` from the original PINNs repository:
+The reference dataset, `burgers_shock.mat`, comes from the original PINNs repository:
 
 https://github.com/maziarraissi/PINNs/blob/master/appendix/Data/burgers_shock.mat
 
 It contains spatial coordinates, time coordinates, and reference solution values.
 
-The reference solution is used to evaluate prediction accuracy. Training uses initial/boundary observations and PDE collocation points rather than interior reference labels.
+Training uses initial/boundary observations and PDE collocation points. Interior reference solution values are used for evaluation.
 
-The dataset belongs to its original authors. Preserve their attribution and applicable upstream license terms when redistributing it.
+The dataset is credited to its original authors. Applicable upstream license terms should be preserved when redistributing it.
